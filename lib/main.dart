@@ -1,7 +1,6 @@
 import 'package:finance_billing/function.dart';
 import 'package:flutter/material.dart';
 
-// --- IMPORT YOUR SEPARATE FILES HERE ---
 import 'package:finance_billing/screens/invoices_page.dart';
 import 'package:finance_billing/screens/payments_page.dart';
 import 'package:finance_billing/screens/expenses_page.dart';
