@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'create_invoice_page.dart'; // Ensure this matches your filename
 
 class InvoicesPage extends StatefulWidget {
   const InvoicesPage({super.key});
@@ -8,14 +9,14 @@ class InvoicesPage extends StatefulWidget {
 }
 
 class _InvoicesPageState extends State<InvoicesPage> {
-  // Sample data list
+  // 1. MAIN DATA LIST
   final List<Map<String, String>> allInvoices = [
     {
       'id': 'INV-2026-001',
       'status': 'Sent',
       'company': 'Metro Rail Corporation',
       'project': 'Metro Station Construction - Phase 2',
-      'amount': '₹45,00,000',
+      'amount': '4500000',
       'date': '20 Feb 2026',
     },
     {
@@ -23,7 +24,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
       'status': 'Paid',
       'company': 'Highway Authority',
       'project': 'Highway Bridge Expansion',
-      'amount': '₹28,00,000',
+      'amount': '2800000',
       'date': '15 Feb 2026',
     },
     {
@@ -31,18 +32,49 @@ class _InvoicesPageState extends State<InvoicesPage> {
       'status': 'Overdue',
       'company': 'Urban Developers Ltd',
       'project': 'Commercial Complex - Tower A',
-      'amount': '₹32,00,000',
+      'amount': '3200000',
       'date': '30 Jan 2026',
+    },
+    {
+      'id': 'INV-2026-004',
+      'status': 'Draft',
+      'company': 'Smart City Mission',
+      'project': 'Smart City Infrastructure',
+      'amount': '6500000',
+      'date': '25 Feb 2026',
     },
   ];
 
-  // List to hold filtered results
   List<Map<String, String>> filteredInvoices = [];
 
   @override
   void initState() {
     super.initState();
     filteredInvoices = allInvoices;
+  }
+
+  // --- UNIQUE ID AND NAVIGATION LOGIC ---
+  void _navigateToCreateInvoice() {
+    // 2. CALCULATE INCREMENTING ID
+    int nextNumber = allInvoices.length + 1;
+    String nextInvoiceId = 'INV-2026-${nextNumber.toString().padLeft(3, '0')}';
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => CreateInvoicePage(
+              nextId: nextInvoiceId, // Pass unique ID to form
+              onSave: (Map<String, String> newInvoice) {
+                setState(() {
+                  // 3. ADD NEW RECORD AT TOP
+                  allInvoices.insert(0, newInvoice);
+                  filteredInvoices = List.from(allInvoices);
+                });
+              },
+            ),
+      ),
+    );
   }
 
   // Search logic
@@ -64,7 +96,6 @@ class _InvoicesPageState extends State<InvoicesPage> {
               )
               .toList();
     }
-
     setState(() {
       filteredInvoices = results;
     });
@@ -74,37 +105,35 @@ class _InvoicesPageState extends State<InvoicesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
+      // + Button from image_ab53bb.png
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToCreateInvoice,
+        backgroundColor: const Color(0xFF1C345C), // Navy theme
+        child: const Icon(Icons.add, color: Colors.white, size: 30),
+      ),
+
       body: Column(
         children: [
-          // --- SEARCH BAR SECTION ---
+          // Search Bar
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
               onChanged: (value) => _runFilter(value),
               decoration: InputDecoration(
                 hintText: 'Search invoices...',
-                hintStyle: TextStyle(color: Colors.grey.shade400),
                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey.shade50,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: Colors.grey.shade200),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF1C345C)),
                 ),
               ),
             ),
           ),
 
-          // --- INVOICE LIST SECTION ---
+          // Invoice List
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -116,9 +145,9 @@ class _InvoicesPageState extends State<InvoicesPage> {
                   status: inv['status']!,
                   company: inv['company']!,
                   project: inv['project']!,
-                  amount: inv['amount']!,
+                  amount: '₹${inv['amount']}',
                   dueDate: inv['date']!,
-                  onTap: () => print("Clicked ${inv['id']}"),
+                  onTap: () => print("Opening ${inv['id']}"),
                 );
               },
             ),
@@ -129,8 +158,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
   }
 }
 
-// Function to build invoice card widget
-
+// Reusable Invoice Card Component
 Widget buildInvoiceCard({
   required String invNumber,
   required String company,
@@ -138,28 +166,16 @@ Widget buildInvoiceCard({
   required String amount,
   required String dueDate,
   required String status,
-  required VoidCallback onTap, // Added this parameter
+  required VoidCallback onTap,
 }) {
-  Color statusBg;
-  Color statusText;
-
-  switch (status.toLowerCase()) {
-    case 'paid':
-      statusBg = Colors.green.shade50;
-      statusText = Colors.green.shade700;
-      break;
-    case 'overdue':
-      statusBg = Colors.red.shade50;
-      statusText = Colors.red.shade700;
-      break;
-    case 'sent':
-      statusBg = Colors.orange.shade50;
-      statusText = Colors.orange.shade700;
-      break;
-    default:
-      statusBg = Colors.grey.shade100;
-      statusText = Colors.grey.shade700;
-  }
+  Color statusBg =
+      status.toLowerCase() == 'paid'
+          ? Colors.green.shade50
+          : Colors.orange.shade50;
+  Color statusText =
+      status.toLowerCase() == 'paid'
+          ? Colors.green.shade700
+          : Colors.orange.shade700;
 
   return Card(
     margin: const EdgeInsets.only(bottom: 16),
@@ -169,7 +185,6 @@ Widget buildInvoiceCard({
       side: BorderSide(color: Colors.grey.shade200),
     ),
     child: InkWell(
-      // Added InkWell for clickability
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
@@ -218,54 +233,34 @@ Widget buildInvoiceCard({
               company,
               style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
-            const SizedBox(height: 4),
-            Text(
-              project,
-              style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-            ),
             const Divider(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Amount',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      amount,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'Due Date',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      dueDate,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
+                _cardDetailColumn('Amount', amount, isBold: true),
+                _cardDetailColumn('Due Date', dueDate),
               ],
             ),
           ],
         ),
       ),
     ),
+  );
+}
+
+Widget _cardDetailColumn(String label, String value, {bool isBold = false}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+      const SizedBox(height: 4),
+      Text(
+        value,
+        style: TextStyle(
+          fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+          fontSize: isBold ? 16 : 14,
+        ),
+      ),
+    ],
   );
 }

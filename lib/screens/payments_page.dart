@@ -1,8 +1,144 @@
-//Common function for payments page
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'add_payment_page.dart';
 
+class PaymentsPage extends StatefulWidget {
+  const PaymentsPage({super.key});
+
+  @override
+  State<PaymentsPage> createState() => _PaymentsPageState();
+}
+
+class _PaymentsPageState extends State<PaymentsPage> {
+  // 1. DATA SOURCE
+  // In a real app, 'allInvoices' would likely come from a shared provider or database
+  final List<Map<String, String>> allInvoices = [
+    {'id': 'INV-2026-001', 'company': 'Metro Rail Corporation'},
+    {'id': 'INV-2026-002', 'company': 'Highway Authority'},
+    {'id': 'INV-2026-003', 'company': 'Urban Developers Ltd'},
+  ];
+
+  final List<Map<String, String>> allPayments = [
+    {
+      'id': 'PAY-2026-001',
+      'status': 'Paid',
+      'invoice': 'INV-2026-002',
+      'mode': 'Bank',
+      'date': '10 Feb 2026',
+      'amount': '₹28,00,000',
+    },
+    {
+      'id': 'PAY-2026-002',
+      'status': 'Paid',
+      'invoice': 'INV-2025-045',
+      'mode': 'UPI',
+      'date': '8 Feb 2026',
+      'amount': '₹15,00,000',
+    },
+  ];
+
+  List<Map<String, String>> filteredPayments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    filteredPayments = allPayments;
+  }
+
+  // --- NAVIGATION LOGIC ---
+  void _navigateToAddPayment() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => AddPaymentPage(
+              // Pass the list of invoices so the dropdown works
+              existingInvoices: allInvoices,
+              onSave: (Map<String, String> newPayment) {
+                setState(() {
+                  allPayments.insert(0, newPayment);
+                  filteredPayments = List.from(allPayments);
+                });
+              },
+            ),
+      ),
+    );
+  }
+
+  void _filter(String query) {
+    setState(() {
+      filteredPayments =
+          allPayments
+              .where(
+                (p) =>
+                    p['id']!.toLowerCase().contains(query.toLowerCase()) ||
+                    p['invoice']!.toLowerCase().contains(query.toLowerCase()),
+              )
+              .toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+
+      // Floating Action Button
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _navigateToAddPayment,
+        backgroundColor: const Color(0xFFE67E4D), // Orange theme
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          "Add Payment",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+
+      body: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              onChanged: _filter,
+              decoration: InputDecoration(
+                hintText: 'Search payments...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade200),
+                ),
+              ),
+            ),
+          ),
+
+          // Payment List
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: filteredPayments.length,
+              itemBuilder: (context, index) {
+                final pay = filteredPayments[index];
+                return buildPaymentCard(
+                  payNumber: pay['id']!,
+                  status: pay['status']!,
+                  linkedInvoice: pay['invoice']!,
+                  paymentMode: pay['mode']!,
+                  date: pay['date']!,
+                  amount: pay['amount']!,
+                  onTap: () => print('Tapped ${pay['id']}'),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- REUSABLE PAYMENT CARD COMPONENT ---
 Widget buildPaymentCard({
   required String payNumber,
   required String linkedInvoice,
@@ -12,7 +148,6 @@ Widget buildPaymentCard({
   required String status,
   required VoidCallback onTap,
 }) {
-  // Define status colors
   Color statusBg =
       status.toLowerCase() == 'paid'
           ? Colors.green.shade50
@@ -21,22 +156,6 @@ Widget buildPaymentCard({
       status.toLowerCase() == 'paid'
           ? Colors.green.shade700
           : Colors.orange.shade700;
-
-  // Define Payment Mode Icons
-  IconData modeIcon;
-  switch (paymentMode.toLowerCase()) {
-    case 'bank':
-      modeIcon = Icons.account_balance_rounded;
-      break;
-    case 'upi':
-      modeIcon = Icons.phonelink_ring_rounded;
-      break;
-    case 'cheque':
-      modeIcon = Icons.edit_note_rounded;
-      break;
-    default:
-      modeIcon = Icons.payments_outlined;
-  }
 
   return Card(
     margin: const EdgeInsets.only(bottom: 16),
@@ -53,7 +172,6 @@ Widget buildPaymentCard({
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Row
             Row(
               children: [
                 Text(
@@ -90,68 +208,18 @@ Widget buildPaymentCard({
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Linked to $linkedInvoice',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-            ),
-
             const SizedBox(height: 16),
-
-            // Payment Details Row
             Row(
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Payment Mode',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            modeIcon,
-                            size: 18,
-                            color: const Color(0xFF1C345C),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            paymentMode,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Date',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        date,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                ),
+                Expanded(child: _detailColumn('Payment Mode', paymentMode)),
+                Expanded(child: _detailColumn('Date', date)),
               ],
             ),
-
             const SizedBox(height: 16),
             const Text(
               'Paid Amount',
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
-            const SizedBox(height: 4),
             Text(
               amount,
               style: const TextStyle(
@@ -167,106 +235,13 @@ Widget buildPaymentCard({
   );
 }
 
-//Function Calling
-
-class PaymentsPage extends StatefulWidget {
-  const PaymentsPage({super.key});
-
-  @override
-  State<PaymentsPage> createState() => _PaymentsPageState();
-}
-
-class _PaymentsPageState extends State<PaymentsPage> {
-  final List<Map<String, String>> allPayments = [
-    {
-      'id': 'PAY-2026-001',
-      'status': 'Paid',
-      'invoice': 'INV-2026-002',
-      'mode': 'Bank',
-      'date': '10 Feb 2026',
-      'amount': '₹28,00,000',
-    },
-    {
-      'id': 'PAY-2026-002',
-      'status': 'Paid',
-      'invoice': 'INV-2025-045',
-      'mode': 'UPI',
-      'date': '8 Feb 2026',
-      'amount': '₹15,00,000',
-    },
-    {
-      'id': 'PAY-2026-003',
-      'status': 'Pending',
-      'invoice': 'INV-2026-001',
-      'mode': 'Cheque',
-      'date': '12 Feb 2026',
-      'amount': '₹45,00,000',
-    },
-  ];
-
-  List<Map<String, String>> filteredPayments = [];
-
-  @override
-  void initState() {
-    super.initState();
-    filteredPayments = allPayments;
-  }
-
-  void _filter(String query) {
-    setState(() {
-      filteredPayments =
-          allPayments
-              .where(
-                (p) =>
-                    p['id']!.toLowerCase().contains(query.toLowerCase()) ||
-                    p['invoice']!.toLowerCase().contains(query.toLowerCase()),
-              )
-              .toList();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              onChanged: _filter,
-              decoration: InputDecoration(
-                hintText: 'Search payments...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: filteredPayments.length,
-              itemBuilder: (context, index) {
-                final pay = filteredPayments[index];
-                return buildPaymentCard(
-                  payNumber: pay['id']!,
-                  status: pay['status']!,
-                  linkedInvoice: pay['invoice']!,
-                  paymentMode: pay['mode']!,
-                  date: pay['date']!,
-                  amount: pay['amount']!,
-                  onTap: () => print('Tapped ${pay['id']}'),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+Widget _detailColumn(String label, String value) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+      const SizedBox(height: 4),
+      Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+    ],
+  );
 }

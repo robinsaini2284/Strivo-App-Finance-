@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'add_expense_page.dart'; // Ensure this matches your file path
 
 class ExpensesPage extends StatefulWidget {
   const ExpensesPage({super.key});
+
   @override
   State<ExpensesPage> createState() => _ExpensesPageState();
 }
@@ -16,6 +18,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
     'Transport',
   ];
 
+  // 1. DATA SOURCE
   final List<Map<String, dynamic>> allExpenses = [
     {
       'company': 'Steel Suppliers Co.',
@@ -35,37 +38,29 @@ class _ExpensesPageState extends State<ExpensesPage> {
       'date': '3 Feb 2026',
       'bill': true,
     },
-    {
-      'company': 'Heavy Equipment Rentals',
-      'type': 'Machinery',
-      'status': 'Pending',
-      'amount': '₹3,20,000',
-      'tax': '₹57,600',
-      'date': '5 Feb 2026',
-      'bill': true,
-    },
-    {
-      'company': 'Logistics Solutions Ltd',
-      'type': 'Transport',
-      'status': 'Approved',
-      'amount': '₹1,25,000',
-      'tax': '₹22,500',
-      'date': '2 Feb 2026',
-      'bill': false,
-    },
-    {
-      'company': 'Skilled Workforce Agency',
-      'type': 'Labour',
-      'status': 'Rejected',
-      'amount': '₹2,80,000',
-      'tax': '₹0',
-      'date': '30 Jan 2026',
-      'bill': false,
-    },
   ];
+
+  // --- NAVIGATION & STATE SYNC ---
+  void _navigateToAddExpense() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => AddExpensePage(
+              onSave: (Map<String, dynamic> newExpense) {
+                setState(() {
+                  // Add the new record to the top of the list
+                  allExpenses.insert(0, newExpense);
+                });
+              },
+            ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Filter logic based on ChoiceChip selection
     final filtered =
         selectedCategory == 'All'
             ? allExpenses
@@ -73,6 +68,14 @@ class _ExpensesPageState extends State<ExpensesPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+
+      // --- FLOATING ACTION BUTTON ---
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToAddExpense,
+        backgroundColor: const Color(0xFF1C345C), // Navy theme
+        child: const Icon(Icons.add, color: Colors.white, size: 30),
+      ),
+
       body: Column(
         children: [
           // Search Bar
@@ -91,6 +94,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
               ),
             ),
           ),
+
           // Horizontal Category Filter
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -119,6 +123,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
                       .toList(),
             ),
           ),
+
           // Expense List
           Expanded(
             child: ListView.builder(
@@ -145,8 +150,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
   }
 }
 
-//Fuction to
-
+// --- REUSABLE COMPONENT: EXPENSE CARD ---
 Widget buildExpenseCard({
   required String company,
   required String type,
@@ -157,7 +161,7 @@ Widget buildExpenseCard({
   required bool hasBill,
   required VoidCallback onTap,
 }) {
-  // Define status colors
+  // Status styling logic
   Color statusBg;
   Color statusText;
   if (status.toLowerCase() == 'approved') {
@@ -169,28 +173,6 @@ Widget buildExpenseCard({
   } else {
     statusBg = const Color(0xFFFFF8E1);
     statusText = const Color(0xFFF9A825);
-  }
-
-  // Define Category Icons
-  Widget categoryIcon;
-  switch (type.toLowerCase()) {
-    case 'material':
-      categoryIcon = const Icon(
-        Icons.grid_view_rounded,
-        color: Colors.deepOrangeAccent,
-      );
-      break;
-    case 'labour':
-      categoryIcon = const Icon(Icons.person, color: Colors.orange);
-      break;
-    case 'machinery':
-      categoryIcon = const Icon(Icons.agriculture_rounded, color: Colors.green);
-      break;
-    case 'transport':
-      categoryIcon = const Icon(Icons.local_shipping, color: Colors.blueGrey);
-      break;
-    default:
-      categoryIcon = const Icon(Icons.receipt);
   }
 
   return Card(
@@ -209,9 +191,12 @@ Widget buildExpenseCard({
           children: [
             Row(
               children: [
-                categoryIcon,
+                const Icon(
+                  Icons.receipt_long,
+                  color: Colors.blueGrey,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
-                // Category Label
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -230,7 +215,6 @@ Widget buildExpenseCard({
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Status Label
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -257,7 +241,7 @@ Widget buildExpenseCard({
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -272,76 +256,30 @@ Widget buildExpenseCard({
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Amount',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      amount,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Tax',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      tax,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
+                _detailColumn('Amount', amount),
+                _detailColumn('Tax', tax),
               ],
             ),
             const Divider(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Bill Status Button
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        hasBill
-                            ? const Color(0xFFE8F5E9)
-                            : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        hasBill ? Icons.upload_file : Icons.block,
-                        size: 14,
+                Row(
+                  children: [
+                    Icon(
+                      hasBill ? Icons.check_circle : Icons.error_outline,
+                      size: 14,
+                      color: hasBill ? Colors.green : Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      hasBill ? 'Bill Attached' : 'No Bill',
+                      style: TextStyle(
+                        fontSize: 12,
                         color: hasBill ? Colors.green : Colors.grey,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        hasBill ? 'Bill Attached' : 'No Bill',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: hasBill ? Colors.green : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
                 Text(
                   date,
@@ -353,5 +291,19 @@ Widget buildExpenseCard({
         ),
       ),
     ),
+  );
+}
+
+Widget _detailColumn(String label, String value) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+      const SizedBox(height: 4),
+      Text(
+        value,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+      ),
+    ],
   );
 }
